@@ -17,7 +17,7 @@
 ```lua
 local Library = loadstring(readfile("KrakenUI.luau"))()
 -- или, если у тебя loadstring по http/файлу:
-local Library = loadstring(game:HttpGet("https://.../KrakenUI.luau"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/GGgodd211/KrakenLib/refs/heads/main/KrakenUI.luau"))()
 ```
 
 Библиотека самодостаточна: подключённая в пустой скрипт, она не падает и готова к использованию сразу.
