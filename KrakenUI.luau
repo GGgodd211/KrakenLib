@@ -1,26 +1,48 @@
 --[[
-	KrakenUI — самостоятельная переиспользуемая GUI-библиотека для executor-скриптов (Roblox Luau)
-                Public API:
-		Library:Window(opts) -> Window
-		Window:Tab(opts) -> Tab            (умеет сворачиваться, иконка, fade+slide переход)
-		Tab:Section(opts) -> Section        (умеет сворачиваться, иконка, stagger fade-in содержимого)
-		Section:Toggle / :Slider / :Dropdown / :Keybind / :Colorpicker / :Textbox / :Button / :Label
-		Section:Divider() / :Paragraph(opts)
-		Library:Notification(opts)
-		Library:Loader(opts):Run(steps)
-		Library:KeySystem(opts):Prompt(onSuccess)
-		Library:Watermark(opts) -> handle:Update(text)
-		Library:KeybindList(opts) -> handle:Refresh(entries)
-		Library.Config   — сохранение/загрузка Flags в файл (SaveConfig/LoadConfig/ListConfigs/DeleteConfig)
-		Library.Tooltip  — всплывающие подсказки для любого GuiObject
-		Library.Theming  — темы/пресеты, Density (Compact/Normal/Comfortable), Glow
-		Library.Icons    — иконки
-		Library.Fonts    — шрифты (встроенные + кастомные)
-		Library.Settings — окно настроек GUI
-		Library.KeybindEditor — окно редактора биндов
-		Library.Flags    — таблица значений всех элементов по флагам
-		Library:Search(query) — глобальный поиск по флагам/именам элементов во всех окнах
-		Library:Unload()
+	KrakenUI — премиальная переиспользуемая GUI-библиотека для executor-скриптов (Roblox Luau)
+
+	Единый монолитный файл: без require, без внешних модулей, без сторонних зависимостей.
+	Внутри — только UI-фреймворк (окна, вкладки, секции, элементы управления, тема, шрифты,
+	иконки, звук, анимации, лоадер, нотификации, key-screen, окно настроек, редактор биндов)
+	и ни строчки игровой логики. Подключи файл в пустой скрипт — библиотека поднимет пустое
+	окно и не упадёт.
+
+	Публичный API вызывается через один и тот же объект-библиотеку — назови его как хочешь:
+
+		local KrakenLib = loadstring(readfile("KrakenUI.luau"))()
+
+		KrakenLib:Window(opts) -> Window
+		Window:Tab(opts) -> Tab
+		Tab:Section(opts) -> Section
+		Tab:Accordion() -> Accordion
+		Section:Toggle / :Slider / :Dropdown / :Keybind / :Colorpicker / :Textbox / :Button
+		Section:Label / :Divider / :Paragraph / :Radio / :Stepper / :ProgressBar / :Table / :Image
+		Section:Row(count) / :Group(opts)
+
+		KrakenLib:Notification(opts)
+		KrakenLib:Announcement(opts)
+		KrakenLib:Modal(opts)
+		KrakenLib:ContextMenu():Attach(guiObject, items)
+		KrakenLib:Loader(opts):Run(onDone)
+		KrakenLib:KeySystem(opts):Prompt(onSuccess)
+		KrakenLib:Watermark(opts) / KrakenLib:KeybindList(opts)
+		KrakenLib:Settings(opts) / KrakenLib:KeybindEditor()
+		KrakenLib:Search(query) / KrakenLib:ScrollToFlag(flag)
+		KrakenLib:GetWindow(name) / KrakenLib:CloseAll()
+		KrakenLib:Unload()
+
+		KrakenLib.Theming    — темы, акцент, радиус, плотность, экспорт/импорт темы
+		KrakenLib.Fonts      — встроенные + кастомные шрифты
+		KrakenLib.Icons      — иконки (Get/Register/List)
+		KrakenLib.Sounds     — UI-звуки (click/hover/toggle), кастомные звуки
+		KrakenLib.Animations — переиспользуемые анимационные пресеты
+		KrakenLib.Events     — глобальная шина событий
+		KrakenLib.Hotkeys    — глобальные хоткеи
+		KrakenLib.Tooltip    — всплывающие подсказки
+		KrakenLib.Config     — сохранение/загрузка Flags на диск
+		KrakenLib.Flags / KrakenLib._elements — значения и объекты всех элементов по флагам
+
+	Полная документация — в README.md.
 --]]
 
 local Library = {}
@@ -36,6 +58,7 @@ local UserInputService  = cloneref(game:GetService("UserInputService"))
 local RunService        = cloneref(game:GetService("RunService"))
 local Players           = cloneref(game:GetService("Players"))
 local HttpService       = cloneref(game:GetService("HttpService"))
+local SoundService       = cloneref(game:GetService("SoundService"))
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -262,7 +285,137 @@ end
 Library.Fonts = Fonts.new()
 
 ------------------------------------------------------------------
--- ИКОНКИ (растровые rbxassetid; Register позволяет подставить свои)
+-- ЗВУК (UI sound effects — click/hover/toggle; выключено по умолчанию)
+------------------------------------------------------------------
+local Sounds = {}
+Sounds.__index = Sounds
+
+local DEFAULT_SOUNDS = {
+	click    = "rbxassetid://6895079853",
+	hover    = "rbxassetid://6895079091",
+	toggleOn = "rbxassetid://6895079853",
+	toggleOff = "rbxassetid://6895079091",
+	notify   = "rbxassetid://6895079648",
+}
+
+function Sounds.new()
+	local self = setmetatable({}, Sounds)
+	self._sounds = table.clone(DEFAULT_SOUNDS)
+	self._enabled = false
+	self._volume = 0.4
+	return self
+end
+
+function Sounds:SetEnabled(v) self._enabled = v and true or false end
+function Sounds:GetEnabled() return self._enabled end
+function Sounds:SetVolume(v) self._volume = clamp(v, 0, 1) end
+function Sounds:GetVolume() return self._volume end
+
+-- Register(name, soundId) — подставить свой звук под ключ (в т.ч. переопределить встроенный)
+function Sounds:Register(name, soundId)
+	self._sounds[name] = soundId
+end
+
+function Sounds:List()
+	local list = {}
+	for name in pairs(self._sounds) do table.insert(list, name) end
+	table.sort(list)
+	return list
+end
+
+-- Play(name) — no-op, если звук выключен через :SetEnabled(false) (по умолчанию)
+function Sounds:Play(name)
+	if not self._enabled then return end
+	local id = self._sounds[name]
+	if not id then return end
+	local ok, s = pcall(Instance.new, "Sound")
+	if not ok then return end
+	s.SoundId = id
+	s.Volume = self._volume
+	s.Parent = SoundService
+	local played = pcall(function() s:Play() end)
+	if not played then s:Destroy(); return end
+	s.Ended:Connect(function() s:Destroy() end)
+	task.delay(4, function() if s.Parent then s:Destroy() end end)
+end
+
+Library.Sounds = Sounds.new()
+
+------------------------------------------------------------------
+-- АНИМАЦИИ (переиспользуемые твин-пресеты для любых GuiObject)
+------------------------------------------------------------------
+local Animations = {}
+Animations.__index = Animations
+
+function Animations.new()
+	return setmetatable({ _custom = {} }, Animations)
+end
+
+-- Register(name, fn) — fn(inst, opts) — добавить свой пресет
+function Animations:Register(name, fn)
+	self._custom[name] = fn
+end
+
+function Animations:List()
+	local list = { "FadeIn", "FadeOut", "Pulse", "Shake", "SlideInLeft", "SlideInRight", "SlideInTop" }
+	for name in pairs(self._custom) do table.insert(list, name) end
+	table.sort(list)
+	return list
+end
+
+-- Play(inst, presetName, opts) — opts: { Duration, OnComplete }
+function Animations:Play(inst, presetName, opts)
+	opts = opts or {}
+	local speed = Library.Theming:GetAnimSpeed()
+	local duration = (opts.Duration or 0.25) * speed
+
+	if self._custom[presetName] then
+		return self._custom[presetName](inst, opts)
+	end
+
+	if presetName == "FadeIn" then
+		inst.BackgroundTransparency = 1
+		local t = tween(inst, duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, { BackgroundTransparency = 0 })
+		if opts.OnComplete then t.Completed:Connect(function() safeCallback(opts.OnComplete) end) end
+		return t
+	elseif presetName == "FadeOut" then
+		local t = tween(inst, duration, Enum.EasingStyle.Quint, Enum.EasingDirection.In, { BackgroundTransparency = 1 })
+		if opts.OnComplete then t.Completed:Connect(function() safeCallback(opts.OnComplete) end) end
+		return t
+	elseif presetName == "Pulse" then
+		local origSize = inst.Size
+		tween(inst, duration * 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Size = origSize + UDim2.new(0, 4, 0, 4) })
+		task.delay(duration * 0.5, function()
+			tween(inst, duration * 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Size = origSize })
+			if opts.OnComplete then task.delay(duration * 0.5, function() safeCallback(opts.OnComplete) end) end
+		end)
+	elseif presetName == "Shake" then
+		local origPos = inst.Position
+		task.spawn(function()
+			for _, dx in ipairs({ 6, -6, 4, -4, 2, -2, 0 }) do
+				tween(inst, 0.03, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Position = origPos + UDim2.new(0, dx, 0, 0) })
+				task.wait(0.03)
+			end
+			inst.Position = origPos
+			safeCallback(opts.OnComplete)
+		end)
+	elseif presetName == "SlideInLeft" or presetName == "SlideInRight" or presetName == "SlideInTop" then
+		local origPos = inst.Position
+		local dx = presetName == "SlideInLeft" and -30 or (presetName == "SlideInRight" and 30 or 0)
+		local dy = presetName == "SlideInTop" and -30 or 0
+		inst.Position = origPos + UDim2.new(0, dx, 0, dy)
+		local t = tween(inst, duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, { Position = origPos })
+		if opts.OnComplete then t.Completed:Connect(function() safeCallback(opts.OnComplete) end) end
+		return t
+	else
+		warn("[KrakenUI.Animations] неизвестный пресет: " .. tostring(presetName))
+	end
+end
+
+Library.Animations = Animations.new()
+
+------------------------------------------------------------------
+-- ИКОНКИ (Get/Register/List — единый реестр иконок библиотеки)
 ------------------------------------------------------------------
 local Icons = {}
 Icons.__index = Icons
@@ -432,6 +585,48 @@ function Theming:_notify()
 	end
 end
 
+-- Export() -> JSON-строка со всей текущей темой (пресет, акцент, радиус, бордер, glow, density, скорость анимаций)
+function Theming:Export()
+	local c = self._colors
+	local ok, json = pcall(HttpService.JSONEncode, HttpService, {
+		Preset = self._preset,
+		Accent = { c.Accent.R, c.Accent.G, c.Accent.B },
+		Radius = self._radius,
+		BorderThickness = self._borderThickness,
+		Glow = self._glow,
+		AnimSpeed = self._animSpeed,
+		Density = self._density,
+	})
+	if not ok then
+		warn("[KrakenUI.Theming] ошибка экспорта: " .. tostring(json))
+		return nil
+	end
+	return json
+end
+
+-- Import(jsonString) -> boolean — применить тему, ранее полученную через :Export()
+function Theming:Import(jsonString)
+	local ok, data = pcall(HttpService.JSONDecode, HttpService, jsonString)
+	if not ok then
+		warn("[KrakenUI.Theming] не удалось разобрать JSON темы: " .. tostring(data))
+		return false
+	end
+	if data.Preset and THEME_PRESETS[data.Preset] then
+		self._colors = table.clone(THEME_PRESETS[data.Preset])
+		self._preset = data.Preset
+	end
+	if data.Accent then
+		self._colors.Accent = Color3.new(data.Accent[1], data.Accent[2], data.Accent[3])
+	end
+	if data.Radius then self._radius = data.Radius end
+	if data.BorderThickness then self._borderThickness = data.BorderThickness end
+	if data.Glow ~= nil then self._glow = data.Glow end
+	if data.AnimSpeed then self._animSpeed = data.AnimSpeed end
+	if data.Density and DENSITY_PADDING[data.Density] then self._density = data.Density end
+	self:_notify()
+	return true
+end
+
 Library.Theming = Theming.new()
 
 ------------------------------------------------------------------
@@ -556,6 +751,7 @@ function Library:Unload()
 	self.Flags = {}
 	self.Hotkeys._binds = {}
 	self.Events._handlers = {}
+	self.Theming._listeners = {}
 end
 
 local function ensureRoot()
@@ -760,6 +956,7 @@ function Library:Notification(opts)
 	opts = opts or {}
 	local theme = self.Theming:Get()
 	local holder = ensureNotifHolder()
+	Library.Sounds:Play("notify")
 
 	local iconName = opts.Icon or "info"
 	local iconColors = {
@@ -1332,6 +1529,7 @@ function Library:KeySystem(opts)
 			if ok then
 				statusLbl.Text = "Ключ принят"
 				statusLbl.TextColor3 = Color3.fromRGB(100, 210, 130)
+				Library.Sounds:Play("toggleOn")
 				self2:SaveKey(key)
 				task.wait(0.2)
 				local fadeOut = tween(overlay, 0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In, { BackgroundTransparency = 1 })
@@ -1342,6 +1540,7 @@ function Library:KeySystem(opts)
 			else
 				statusLbl.Text = reason or "Неверный ключ"
 				statusLbl.TextColor3 = Color3.fromRGB(230, 110, 110)
+				Library.Sounds:Play("toggleOff")
 				tween(card, 0.08, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, { Position = card.Position + UDim2.new(0, 6, 0, 0) })
 				task.wait(0.08)
 				tween(card, 0.08, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, { Position = UDim2.new(0.5, 0, 0.5, 0) })
@@ -1402,6 +1601,7 @@ local function makeElementDispatcher(getBody)
 	function dispatcher:Stepper(o) return add("Stepper", o) end
 	function dispatcher:ProgressBar(o) return add("ProgressBar", o) end
 	function dispatcher:Table(o) return add("Table", o) end
+	function dispatcher:Image(o) return add("Image", o) end
 
 	-- Row(count) — раскладывает count колонок в ряд; у каждой колонки доступны
 	-- те же методы (Toggle/Slider/...), что и у обычной секции.
@@ -1493,7 +1693,14 @@ local function createSection(parentBody, opts)
 
 	local body = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 0, 26), Parent = container, ClipsDescendants = true })
 	local _, densityPad2 = Library.Theming:GetDensity()
-	listLayout(Enum.FillDirection.Vertical, densityPad2 and densityPad2.row or 6).Parent = body
+	local bodyListLayout = listLayout(Enum.FillDirection.Vertical, densityPad2 and densityPad2.row or 6)
+	bodyListLayout.Parent = body
+
+	-- живое обновление отступов при смене плотности интерфейса (Theming:SetDensity)
+	Library.Theming:OnChanged(function()
+		local _, dp = Library.Theming:GetDensity()
+		bodyListLayout.Padding = UDim.new(0, dp and dp.row or 6)
+	end)
 
 	local collapsible = makeCollapsible(headerBtn, arrow, body, opts.Collapsed, opts.OnCollapse)
 	section._collapsible = collapsible
@@ -1561,6 +1768,7 @@ ELEMENT_BUILDERS.Toggle = function(parent, o)
 		state = v and true or false
 		render(true)
 		if o.Flag then Library.Flags[o.Flag] = state end
+		Library.Sounds:Play(state and "toggleOn" or "toggleOff")
 		if fireCallback ~= false then safeCallback(callback, state) end
 	end
 
@@ -2092,16 +2300,18 @@ ELEMENT_BUILDERS.Button = function(parent, o)
 	Library.Fonts:Apply(row, "Gotham Bold", 13)
 
 	track(row.MouseEnter:Connect(function()
+		Library.Sounds:Play("hover")
 		tween(row, 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { BackgroundTransparency = 0.1 })
 	end))
 	track(row.MouseLeave:Connect(function()
 		tween(row, 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { BackgroundTransparency = 0 })
 	end))
 	track(row.MouseButton1Click:Connect(function()
+		Library.Sounds:Play("click")
 		safeCallback(o.Callback)
 	end))
 
-	return { Get = function() return nil end }
+	return { Get = function() return nil end, _inst = row }
 end
 
 -- LABEL -----------------------------------------------------------
@@ -2409,6 +2619,37 @@ ELEMENT_BUILDERS.Table = function(parent, o)
 		renderRows()
 	end
 	function api:Get() return rows end
+
+	return api
+end
+
+-- IMAGE (встраиваемое изображение/баннер/логотип с опциональной подписью) ----
+ELEMENT_BUILDERS.Image = function(parent, o)
+	local theme = Library.Theming:Get()
+	local height = o.Height or 120
+	local hasCaption = o.Caption ~= nil
+
+	local holder = new("Frame", {
+		BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, height + (hasCaption and 20 or 0)), Parent = parent,
+	})
+
+	local img = new("ImageLabel", {
+		BackgroundColor3 = theme.Bg, Size = UDim2.new(1, 0, 0, height),
+		Image = o.Image or "", ScaleType = o.ScaleType or Enum.ScaleType.Crop, Parent = holder,
+	}, { corner(8) })
+
+	if hasCaption then
+		local cap = new("TextLabel", {
+			BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, height + 2), Size = UDim2.new(1, 0, 0, 16),
+			Text = o.Caption, TextColor3 = theme.SubText, TextXAlignment = Enum.TextXAlignment.Center, TextSize = 11, Parent = holder,
+		})
+		Library.Fonts:Apply(cap, "Gotham", 11)
+	end
+
+	local api = {}
+	api._inst = holder
+	function api:Get() return img.Image end
+	function api:Set(imageId) img.Image = imageId end
 
 	return api
 end
@@ -2820,20 +3061,40 @@ function Library:Settings(opts)
 	secBehavior:Toggle({ Name = "Streamproof по умолчанию", Default = false })
 	secBehavior:Dropdown({ Name = "Язык", Options = { "RU", "EN" }, Default = "RU" })
 
+	local secSound = tab2:Section({ Name = "Звук", Icon = "bolt" })
+	secSound:Toggle({
+		Name = "UI-звуки (клики/тогглы/уведомления)", Default = self.Sounds:GetEnabled(),
+		Callback = function(v) self.Sounds:SetEnabled(v) end,
+	})
+	secSound:Slider({
+		Name = "Громкость", Min = 0, Max = 1, Decimals = 2, Default = self.Sounds:GetVolume(),
+		Callback = function(v) self.Sounds:SetVolume(v) end,
+	})
+
 	local secReset = tab2:Section({ Name = "Сброс и конфиг" })
 	secReset:Button({ Name = "Сбросить тему", Callback = function() self.Theming:Use("Void Purple") end })
 	secReset:Button({
 		Name = "Экспорт UI-конфига",
 		Callback = function()
-			local data = HttpService:JSONEncode({
-				Preset = self.Theming._preset,
-				Radius = self.Theming:GetRadius(),
-				Border = self.Theming:GetBorderThickness(),
-				Font = self.Fonts:GetDefault(),
-			})
+			local data = self.Theming:Export()
 			pcall(function() setclipboard(data) end)
 			self:Notification({ Title = "Экспортировано", Text = "UI-конфиг скопирован в буфер обмена", Icon = "success" })
 			safeCallback(opts.OnExport, data)
+		end,
+	})
+	local importJson = nil
+	secReset:Textbox({ Name = "JSON темы", Placeholder = "Вставь экспортированный конфиг...", Callback = function(t) importJson = t end })
+	secReset:Button({
+		Name = "Импорт UI-конфига",
+		Callback = function()
+			if not importJson or importJson == "" then return end
+			local ok = self.Theming:Import(importJson)
+			self:Notification({
+				Title = ok and "Импортировано" or "Ошибка",
+				Text = ok and "Тема применена" or "Не удалось разобрать конфиг",
+				Icon = ok and "success" or "error",
+			})
+			safeCallback(opts.OnImport, importJson)
 		end,
 	})
 
@@ -3016,6 +3277,78 @@ function Library:Watermark(opts)
 			end
 		end)
 	end
+
+	return handle
+end
+
+------------------------------------------------------------------
+-- ANNOUNCEMENT (закрепляемый баннер сверху экрана — для апдейтов/важных сообщений;
+-- в отличие от Notification не исчезает сама, пока не закрыта или не задан Duration)
+------------------------------------------------------------------
+-- opts: { Title, Text, Icon, Dismissible = true, Duration, OnDismiss }
+function Library:Announcement(opts)
+	opts = opts or {}
+	local theme = self.Theming:Get()
+	local root = ensureRoot()
+
+	local bar = new("Frame", {
+		BackgroundColor3 = theme.Panel, AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 12), Size = UDim2.new(0, 420, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1, ZIndex = 700, Parent = root,
+	}, { corner(10), stroke(theme.Accent, 1, 0.5), pad(12, 8, 12, 8) })
+
+	local row = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, ZIndex = 701, Parent = bar })
+	new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = row
+
+	if opts.Icon and Library.Icons:Get(opts.Icon) then
+		new("ImageLabel", {
+			BackgroundTransparency = 1, Size = UDim2.new(0, 18, 0, 18), Image = Library.Icons:Get(opts.Icon),
+			ImageColor3 = theme.Accent, ZIndex = 701, Parent = row,
+		})
+	end
+
+	local textCol = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -50, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, ZIndex = 701, Parent = row })
+	new("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }).Parent = textCol
+
+	if opts.Title then
+		local t = new("TextLabel", {
+			BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16), Text = opts.Title, TextColor3 = theme.Text,
+			TextXAlignment = Enum.TextXAlignment.Left, TextSize = 13, ZIndex = 701, Parent = textCol,
+		})
+		Library.Fonts:Apply(t, "Gotham Bold", 13)
+	end
+	if opts.Text then
+		local b = new("TextLabel", {
+			BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextWrapped = true,
+			Text = opts.Text, TextColor3 = theme.SubText, TextXAlignment = Enum.TextXAlignment.Left, TextSize = 12, ZIndex = 701, Parent = textCol,
+		})
+		Library.Fonts:Apply(b, "Gotham", 12)
+	end
+
+	local handle = {}
+	local dismissed = false
+	function handle:Dismiss()
+		if dismissed or not bar.Parent then return end
+		dismissed = true
+		local t = tween(bar, 0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In, { BackgroundTransparency = 1 })
+		t.Completed:Wait()
+		bar:Destroy()
+		safeCallback(opts.OnDismiss)
+	end
+
+	if opts.Dismissible ~= false then
+		local closeBtn = new("TextButton", {
+			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.new(0, 18, 0, 18),
+			BackgroundTransparency = 1, Text = "×", TextColor3 = theme.SubText, TextSize = 16, ZIndex = 701, Parent = row,
+		})
+		track(closeBtn.MouseButton1Click:Connect(function() handle:Dismiss() end))
+	end
+
+	if opts.Duration then
+		task.delay(opts.Duration, function() handle:Dismiss() end)
+	end
+
+	tween(bar, 0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, { BackgroundTransparency = 0 })
 
 	return handle
 end
