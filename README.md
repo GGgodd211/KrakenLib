@@ -1,565 +1,350 @@
 <div align="center">
 
-# 🐙 KrakenUI
+# K R A K E N
+### Native controls. Considered design.
 
-**A premium, self-contained GUI library for Roblox Luau executors.**
-One file. Zero dependencies. Zero game logic. Just a beautiful, modern UI toolkit.
+**Расширяемая GUI-библиотека для Roblox · Luau · Один файл**
 
-[![Luau](https://img.shields.io/badge/language-Luau-00A2FF?style=for-the-badge&logo=lua&logoColor=white)](https://luau-lang.org/)
-[![Roblox](https://img.shields.io/badge/platform-Roblox-E2231A?style=for-the-badge&logo=roblox&logoColor=white)](https://www.roblox.com/)
-[![Single File](https://img.shields.io/badge/architecture-single--file-6C4FE0?style=for-the-badge)](#-installation)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](#-license)
-[![GitHub last commit](https://img.shields.io/github/last-commit/GGgodd211/KrakenLib?style=for-the-badge&color=6C4FE0)](https://github.com/GGgodd211/KrakenLib)
+![Version](https://img.shields.io/badge/version-2.0.0-9B82FF?style=flat-square)
+![Luau](https://img.shields.io/badge/language-Luau-16171D?style=flat-square&logo=lua&logoColor=white)
+![Components](https://img.shields.io/badge/components-18-16171D?style=flat-square)
+![Themes](https://img.shields.io/badge/themes-9-16171D?style=flat-square)
 
-[Quick Start](#-quick-start) · [API Reference](#-api-reference) · [Theming](#-theming) · [Full Example](#-full-example) · [Contributing](#-contributing)
+[Начало](#быстрый-старт) · [Компоненты](#компоненты) · [API](#полный-публичный-api) · [Темы](#темы-и-доступность) · [Изменения](#что-исправлено)
 
 </div>
 
 ---
 
-## 🧠 What is KrakenUI?
+## Интерфейс без визуального шума
 
-KrakenUI is a **pure UI framework** — windows, tabs, sections, 15+ interactive elements,
-theming, fonts, icons, sound, animation presets, notifications, dialogs, a key-screen, a
-settings panel and a keybind editor — all in **one monolithic `.luau` file** with no
-`require`, no external modules, and **no game logic whatsoever**. Drop it into an empty
-script and it boots a clean, empty window without errors.
+Графитовые поверхности, мягкие границы, фиолетовый акцент, увеличенные интервалы и ясная типографика. Акцент выделяет активную вкладку, а не окрашивает всё окно. Свечение по умолчанию выключено. Библиотека не содержит игровой логики.
 
-Everything hangs off a single library object, however you name it:
+| Основа | Возможности |
+| :--- | :--- |
+| **Workspace** | Несколько окон, перетаскивание, изменение размера, сворачивание, прокручиваемая навигация |
+| **Components** | 18 компонентов, колонки, группы, аккордеоны, программное управление |
+| **Appearance** | 9 тем, собственные палитры, живое обновление цветов, reduced motion |
+| **Control** | Именованные окна, поиск по флагам и названиям, Command Palette, события |
+| **Persistence** | JSON-конфиги, сериализация Color3 и клавиш, файловые профили при наличии API среды |
 
-```lua
-local KrakenLib = loadstring(readfile("KrakenUI.luau"))()
-```
+### Файлы
 
-From there, **actions** are called with a colon (`KrakenLib:Window(...)`, `KrakenLib:Modal(...)`)
-and **stateful submodules** are accessed with a dot (`KrakenLib.Theming`, `KrakenLib.Sounds`,
-`KrakenLib.Events`) — one consistent convention across the entire API.
+- [`KrakenUI.lua`](KrakenUI.lua) — полная библиотека в запрошенном формате Lua; использует Roblox Luau API.
+- [`KrakenUI.luau`](KrakenUI.luau) — идентичный исходник с расширением Luau для репозитория.
+- [`Example.client.lua`](Example.client.lua) — демонстрация интерфейса для Roblox Studio.
+- [`SmokeTest.client.lua`](SmokeTest.client.lua) — проверка основных сценариев в Roblox Studio.
 
----
+> Это нативный Roblox GUI, не веб-интерфейс. Для визуальной проверки нужен Roblox Studio / Roblox-клиент. Обычный Lua 5.x и браузер не предоставляют Instance, Color3 и сервисы Roblox.
 
-## ✨ Features
+## Быстрый старт
 
-| | |
-|---|---|
-| 🪟 **Windows & Tabs** | Draggable, 8-direction resizable windows · collapsible fade+slide tabs · minimize-to-bubble |
-| 🧩 **15+ Elements** | Toggle, Slider, Dropdown, Keybind, Colorpicker, Textbox, Button, Label, Divider, Paragraph, Radio, Stepper, ProgressBar, Table, Image |
-| 📐 **Composable Layout** | `Row(n)` for side-by-side columns, `Group()` for conditional visibility, `Accordion()` for exclusive panels — all nestable |
-| 🎨 **Theming Engine** | 7 built-in presets, live accent/radius/border/density/glow controls, JSON theme export/import |
-| 🔤 **Custom Fonts** | Built-in font presets + register your own Roblox Font Family assets |
-| 🖼️ **Icon Registry** | `Get` / `Register` / `List` — drop in your own icon set in one line |
-| 🔊 **Sound Engine** | Opt-in UI sound effects (click/hover/toggle/notify), fully customizable |
-| 🎬 **Animation Presets** | FadeIn/Out, Pulse, Shake, SlideIn — reusable on any `GuiObject`, extensible via `Register` |
-| 📡 **Event Bus & Hotkeys** | Global pub/sub events + hotkeys that work even with the menu closed |
-| 💬 **Rich Feedback** | Toast notifications, persistent announcement banners, modal dialogs, context menus, tooltips |
-| 🔑 **Key System** | Live format validation, rate-limiting, autosave, buy/discord links — generic, bring your own backend |
-| ⏳ **Multi-stage Loader** | Weighted step progress bar with live sub-status, mini console log, skip button |
-| 💾 **Config Persistence** | Save/load every flag to disk as JSON, list and delete saved profiles |
-| ⚙️ **Built-in Panels** | Ready-made Settings window and Keybind Editor with conflict detection |
-| 🔍 **Search & Navigate** | `Search(query)` + `ScrollToFlag(flag)` — jump straight to any element, anywhere |
-| 🪟 **Multi-window** | `GetWindow(name)` / `CloseAll()` registry for managing several windows at once |
+### Roblox Studio — рекомендуемый способ
 
----
-
-## 📦 Installation
-
-**Option A — host it yourself and `loadstring` it:**
+Скопируйте содержимое `KrakenUI.luau` в **ModuleScript** с именем `KrakenUI` внутри `ReplicatedStorage`. Создайте **LocalScript** в `StarterPlayerScripts`:
 
 ```lua
-local KrakenLib = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/GGgodd211/KrakenLib/main/KrakenUI.luau"
-))()
-```
+local KrakenLib = require(game:GetService("ReplicatedStorage"):WaitForChild("KrakenUI"))
 
-**Option B — load a local copy through your executor:**
+local window = KrakenLib:Window({
+    Name = "main",
+    Title = "Kraken Workspace",
+    SubTitle = "YOUR INTERFACE / YOUR RULES",
+    Size = UDim2.fromOffset(720, 500),
+})
+window:Center()
 
-```lua
-local KrakenLib = loadstring(readfile("KrakenUI.luau"))()
-```
-
-Either way, the library is fully self-contained — no other files, no `require`, nothing else to install.
-
----
-
-## 🚀 Quick Start
-
-```lua
-local KrakenLib = loadstring(readfile("KrakenUI.luau"))()
-
-local win = KrakenLib:Window({ Title = "My Script", SubTitle = "v1.0", Name = "main" })
-local tab = win:Tab({ Name = "Home", Icon = "settings" })
-local sec = tab:Section({ Name = "General", Icon = "star" })
-
-sec:Toggle({ Name = "Enable feature", Flag = "MyToggle", Callback = function(v)
-    print("Toggle:", v)
+local home = window:Tab({ Name = "Overview", Icon = "star" })
+local section = home:Section({ Name = "Workspace" })
+section:Badge({ Text = "READY" })
+section:Toggle({ Name = "Notifications", Flag = "notifications", Default = true })
+section:Slider({ Name = "Volume", Flag = "volume", Min = 0, Max = 100, Default = 60 })
+section:Dropdown({ Name = "Quality", Flag = "quality", Options = { "Low", "High" }, Default = "High" })
+section:Button({ Name = "Search controls", Callback = function()
+    KrakenLib:CommandPalette()
 end })
 
-sec:Slider({ Name = "Speed", Min = 0, Max = 10, Decimals = 1, Suffix = "x", Flag = "Speed" })
-
-KrakenLib:Notification({ Title = "Ready", Text = "KrakenUI loaded", Icon = "success" })
-```
-
-That's it — no setup, no boilerplate, no asset installation.
-
----
-
-## 🧩 API Reference
-
-All examples below assume `local KrakenLib = loadstring(...)()`.
-
-<details>
-<summary><strong>🪟 Windows, Tabs & Layout</strong></summary>
-
-### `KrakenLib:Window(opts) -> Window`
-
-| Field | Type | Description |
-|---|---|---|
-| `Title` | string | Window title |
-| `SubTitle` | string | Optional subtitle |
-| `Name` | string | Optional handle, used by `GetWindow(name)` |
-| `Size` | UDim2 | Default `0, 620, 0, 420` |
-| `MinSize` / `MaxSize` | Vector2 | Resize bounds |
-
-```lua
-local win = KrakenLib:Window({ Title = "My Script", SubTitle = "v1.0", Name = "main" })
-win:SetTitle("New Title")
-```
-
-Windows are draggable, resizable from all 8 edges/corners, fade in on creation, glow with
-the accent color, and can be minimized to a small draggable bubble.
-
-### `Window:Tab(opts) -> Tab`
-
-```lua
-local tab = win:Tab({ Name = "Combat", Icon = "target" })
-```
-
-Fade+slide transition, animated active indicator, staggered fade-in of its contents.
-
-### `Tab:Section(opts) -> Section`
-
-```lua
-local sec = tab:Section({ Name = "Aimbot", Icon = "target", Collapsed = false,
-    OnCollapse = function(isCollapsed) end })
-```
-
-Collapsible card with an animated chevron. Every element method below lives on `Section`.
-
-### `Tab:Accordion() -> Accordion`
-
-A group of sections where only one is expanded at a time.
-
-```lua
-local acc = tab:Accordion()
-local p1 = acc:Panel({ Name = "Profile A" })
-local p2 = acc:Panel({ Name = "Profile B" })
-```
-
-### `Section:Row(count)` — side-by-side columns
-
-```lua
-local left, right = sec:Row(2)
-left:Toggle({ Name = "Left toggle" })
-right:Toggle({ Name = "Right toggle" })
-```
-
-Each column is a full element dispatcher — `Row` and `Group` nest inside each other freely.
-
-### `Section:Group(opts)` — conditional visibility
-
-```lua
-local espGroup = sec:Group({ Name = "Enable ESP", Default = false, Flag = "ESPEnabled" })
-espGroup:Colorpicker({ Name = "Outline color", Default = Color3.new(1, 0, 0) })
-espGroup:Slider({ Name = "Thickness", Min = 1, Max = 5, Default = 1 })
-```
-
-A master toggle that shows/hides everything nested inside it.
-
-</details>
-
-<details>
-<summary><strong>🧩 Elements</strong></summary>
-
-Every element accepts an optional `Flag` (registers into `KrakenLib.Flags[flag]` and
-`KrakenLib._elements[flag]`) and returns an object with `:Get()` / `:Set()`.
-
-| Method | Purpose |
-|---|---|
-| `Section:Toggle(opts)` | On/off switch |
-| `Section:Slider(opts)` | Draggable numeric slider with decimals + manual text entry |
-| `Section:Dropdown(opts)` | Single or multi-select with search |
-| `Section:Keybind(opts)` | Toggle / Hold / Always key binding |
-| `Section:Colorpicker(opts)` | HSV picker + HEX input |
-| `Section:Textbox(opts)` | Text input, optional numeric filter |
-| `Section:Button(opts)` | Action button |
-| `Section:Label(opts)` | Static text |
-| `Section:Divider()` | Thin separator line |
-| `Section:Paragraph(opts)` | Title + wrapped body text |
-| `Section:Radio(opts)` | Inline mutually-exclusive pill buttons |
-| `Section:Stepper(opts)` | Numeric value with −/+ buttons |
-| `Section:ProgressBar(opts)` | Embeddable progress bar (`:Set(pct)`) |
-| `Section:Table(opts)` | Scrollable data grid, sortable by column |
-| `Section:Image(opts)` | Embedded image/banner with optional caption |
-
-```lua
-sec:Slider({
-    Name = "Offset Y", Min = -10, Max = 10, Decimals = 1, Suffix = "m",
-    Hint = "shifts position vertically", Flag = "OffsetY",
-    Callback = function(value) end,
-})
-
-sec:Dropdown({ Name = "Weapon", Options = { "Knife", "Pistol", "Rifle" }, Multi = false })
-
-sec:Keybind({ Name = "Open menu", Default = Enum.KeyCode.RightShift, Mode = "Toggle" })
-
-sec:Colorpicker({ Name = "ESP Color", Default = Color3.fromRGB(255, 0, 0) })
-
-sec:Radio({ Name = "Aim Target", Options = { "Head", "Chest", "Nearest" }, Default = "Head" })
-
-sec:Stepper({ Name = "FOV", Min = 60, Max = 120, Step = 5, Default = 90 })
-
-local bar = sec:ProgressBar({ Name = "Loading skin", Default = 0 })
-bar:Set(0.65)
-
-local tbl = sec:Table({
-    Name = "Players", Columns = { "Name", "Distance" }, Sortable = true,
-    Rows = { { Name = "Alex", Distance = 42 }, { Name = "Bob", Distance = 15 } },
-})
-tbl:SetRows({ { Name = "Carl", Distance = 8 } })
-
-sec:Image({ Image = "rbxassetid://0000000000", Height = 120, Caption = "Preview" })
-```
-
-</details>
-
-<details>
-<summary><strong>💬 Feedback & Overlays</strong></summary>
-
-### `KrakenLib:Notification(opts)`
-
-```lua
-KrakenLib:Notification({ Title = "Saved", Text = "Config saved", Icon = "success", Duration = 4 })
-```
-
-### `KrakenLib:Announcement(opts)`
-
-A dismissible banner pinned to the top of the screen — unlike `Notification`, it stays until
-closed (or `Duration` elapses). Great for update prompts.
-
-```lua
-KrakenLib:Announcement({
-    Title = "Update available", Text = "v1.1 is out — click to update.", Icon = "info",
-    Dismissible = true, OnDismiss = function() end,
-})
-```
-
-### `KrakenLib:Modal(opts)`
-
-```lua
-KrakenLib:Modal({
-    Title = "Reset settings?", Text = "This cannot be undone.",
-    AcceptText = "Reset", CancelText = "Cancel",
-    OnAccept = function() end, OnCancel = function() end,
-})
-```
-
-### `KrakenLib:ContextMenu()`
-
-```lua
-local menu = KrakenLib:ContextMenu()
-menu:Attach(someGuiObject, {
-    { Name = "Copy", Icon = "copy", Callback = function() end },
-    { Name = "Delete", Icon = "trash", Callback = function() end },
-})
-```
-
-### `KrakenLib:Loader(opts):Run(onDone)`
-
-Multi-stage weighted progress bar with per-step status icons, a mini console log, and a
-skip button that appears after 3 seconds.
-
-```lua
-local loader = KrakenLib:Loader({
-    Title = "MyScript", Subtitle = "Initializing...",
-    Steps = {
-        { Name = "Loading core...", Weight = 30, Fn = function() task.wait(0.2) end },
-        { Name = "Building UI...",  Weight = 40, Fn = function() task.wait(0.2) end },
-        { Name = "Done",            Weight = 30 },
-    },
-})
-loader:Run(function() print("loaded") end)
-```
-
-### `KrakenLib:KeySystem(opts):Prompt(onSuccess)`
-
-A generic (non-cheat-specific) license key screen: live `XXXX-XXXX-XXXX` format validation
-with debounce, rate-limiting, disk autosave, buy/Discord links.
-
-```lua
-local ks = KrakenLib:KeySystem({
-    Title = "Enter your key",
-    BuyUrl = "https://example.com/buy",
-    DiscordUrl = "https://discord.gg/example",
-    RateLimit = { Attempts = 5, Window = 60 },
-    Validate = function(key)
-        if key == "AAAA-BBBB-CCCC" then return true end
-        return false, "Invalid key"
-    end,
-})
-ks:Prompt(function(validKey) print("unlocked:", validKey) end)
-```
-
-### `KrakenLib:Watermark(opts)` / `KrakenLib:KeybindList(opts)`
-
-```lua
-local wm = KrakenLib:Watermark({ Text = "MyScript", UpdateInterval = 1,
-    UpdateFn = function() return ("MyScript | %d FPS"):format(60) end })
-wm:Update("manual text")
-
-local kl = KrakenLib:KeybindList({ Title = "Active binds" })
-kl:Refresh({ { Name = "Menu", Key = "RightShift" } })
-```
-
-### `KrakenLib.Tooltip:Attach(guiObject, text)`
-
-```lua
-KrakenLib.Tooltip:Attach(someGuiObject, "This does X")
-```
-
-</details>
-
-<details>
-<summary><strong>🎨 Core Modules</strong></summary>
-
-### `KrakenLib.Theming`
-
-```lua
-KrakenLib.Theming:List()                  -- {"Cyber Blue", "Dracula", ...}
-KrakenLib.Theming:Use("Cyber Blue")
-KrakenLib.Theming:SetAccent(Color3.fromRGB(255, 80, 80))
-KrakenLib.Theming:SetRadius(14)           -- 0..20
-KrakenLib.Theming:SetBorderThickness(2)   -- 0..3
-KrakenLib.Theming:SetGlow(true)
-KrakenLib.Theming:SetAnimSpeed(0.6)       -- lower = faster
-KrakenLib.Theming:SetDensity("Compact")   -- Compact | Normal | Comfortable
-
-local json = KrakenLib.Theming:Export()
-KrakenLib.Theming:Import(json)
-
-local unsubscribe = KrakenLib.Theming:OnChanged(function(colors) end)
-```
-
-### `KrakenLib.Fonts`
-
-```lua
-KrakenLib.Fonts:List()
-KrakenLib.Fonts:Register("MyFont", "rbxassetid://1234567890", Enum.FontWeight.Bold)
-KrakenLib.Fonts:SetDefault("MyFont", 14)
-```
-
-### `KrakenLib.Icons`
-
-```lua
-KrakenLib.Icons:Get("settings")
-KrakenLib.Icons:Register("myicon", "rbxassetid://0000000000")
-KrakenLib.Icons:List()
-```
-
-Built-in keys include: `settings, cog, search, close, minimize, restore, chevronUp/Down/Left/Right,
-key, lock, unlock, info, warning, error, success, star, heart, bolt, save, load, trash, copy,
-paste, refresh, filter, palette, sliders, tabs, keyboard, mouse, edit, plus, shield, friend, bag, eye`.
-
-### `KrakenLib.Sounds`
-
-Opt-in UI sound effects (click, hover, toggle, notify) — disabled by default.
-
-```lua
-KrakenLib.Sounds:SetEnabled(true)
-KrakenLib.Sounds:SetVolume(0.5)
-KrakenLib.Sounds:Register("click", "rbxassetid://0000000000")
-KrakenLib.Sounds:Play("click")
-```
-
-### `KrakenLib.Animations`
-
-Reusable tween presets for any `GuiObject`.
-
-```lua
-KrakenLib.Animations:Play(someFrame, "FadeIn")
-KrakenLib.Animations:Play(someFrame, "Shake")
-KrakenLib.Animations:Register("MyPreset", function(inst, opts) end)
-```
-
-Built-ins: `FadeIn`, `FadeOut`, `Pulse`, `Shake`, `SlideInLeft`, `SlideInRight`, `SlideInTop`.
-
-### `KrakenLib.Events`
-
-```lua
-local off = KrakenLib.Events:On("PlayerDied", function(reason) end)
-KrakenLib.Events:Fire("PlayerDied", "fall damage")
-off()
-```
-
-### `KrakenLib.Hotkeys`
-
-Global hotkeys, independent of any GUI element — fire even while the menu is closed.
-
-```lua
-KrakenLib.Hotkeys:Bind("ToggleMenu", Enum.KeyCode.RightShift, "Toggle", function(active) end)
-KrakenLib.Hotkeys:List()
-KrakenLib.Hotkeys:Unbind("ToggleMenu")
-```
-
-### `KrakenLib.Config`
-
-```lua
-KrakenLib.Config:Save("profile1")
-KrakenLib.Config:Load("profile1")
-KrakenLib.Config:List()
-KrakenLib.Config:Delete("profile1")
-```
-
-</details>
-
-<details>
-<summary><strong>⚙️ Built-in Panels & Utilities</strong></summary>
-
-### `KrakenLib:Settings(opts)`
-
-Ready-made "Script Settings" window: theme presets, accent color, radius, border, density,
-animation speed, font picker + custom font registration, sound toggle/volume, behavior
-options, theme export/import.
-
-```lua
-KrakenLib:Settings({ OnExport = function(json) end, OnImport = function(json) end })
-```
-
-### `KrakenLib:KeybindEditor()`
-
-Ready-made bind manager: add custom binds (Toggle/Hold/Always), delete, conflict highlighting.
-
-```lua
-KrakenLib:KeybindEditor()
-for _, bind in ipairs(KrakenLib._binds) do print(bind.Name, bind.Mode, bind.Key) end
-```
-
-### Search & navigation
-
-```lua
-local results = KrakenLib:Search("offset")          -- {"OffsetX", "OffsetY", ...}
-KrakenLib:ScrollToFlag(results[1])                    -- switches tab, scrolls, highlights
-```
-
-### Window registry
-
-```lua
-local win = KrakenLib:GetWindow("main")
-KrakenLib:CloseAll()
-```
-
-### `KrakenLib:Unload()`
-
-Disconnects every event, destroys the `ScreenGui`, clears flags/elements/hotkeys/events.
-
-```lua
-KrakenLib:Unload()
-```
-
-</details>
-
----
-
-## 🎨 Theming
-
-Seven built-in presets, switchable at any time — every open window updates live:
-
-| Preset | Vibe |
-|---|---|
-| `Void Purple` | Default — deep violet accent, near-black background |
-| `Cyber Blue` | Electric blue on dark slate |
-| `Sunset` | Warm coral/orange on dark brown |
-| `Mono Dark` | Grayscale, minimal |
-| `Mono Light` | Grayscale, light background |
-| `Nord` | Cool arctic blues |
-| `Dracula` | Classic purple-on-dark developer theme |
-
-```lua
-KrakenLib.Theming:Use("Nord")
-KrakenLib.Theming:SetAccent(Color3.fromRGB(255, 90, 90)) -- override the accent on top of any preset
-```
-
----
-
-## 🗂 Full Example
-
-```lua
-local KrakenLib = loadstring(readfile("KrakenUI.luau"))()
-
-KrakenLib.Theming:Use("Cyber Blue")
-KrakenLib.Sounds:SetEnabled(true)
-
-local ks = KrakenLib:KeySystem({
-    Title = "Enter key",
-    Validate = function(key) return key == "DEMO-DEMO-DEMO" end,
-})
-
-ks:Prompt(function()
-    local loader = KrakenLib:Loader({
-        Title = "MyScript",
-        Steps = {
-            { Name = "Loading core...",  Weight = 30, Fn = function() task.wait(0.2) end },
-            { Name = "Building UI...",   Weight = 40, Fn = function() task.wait(0.2) end },
-            { Name = "Done",             Weight = 30 },
-        },
-    })
-
-    loader:Run(function()
-        local win = KrakenLib:Window({ Title = "MyScript", SubTitle = "v1.0", Name = "main" })
-
-        local tabMain = win:Tab({ Name = "Home", Icon = "settings" })
-        local sec = tabMain:Section({ Name = "General", Icon = "star" })
-
-        sec:Toggle({ Name = "Example toggle", Flag = "Example", Default = false })
-        sec:Slider({ Name = "Example slider", Min = 0, Max = 100, Decimals = 1, Suffix = "%", Flag = "ExampleSlider" })
-        sec:Divider()
-
-        local group = sec:Group({ Name = "Enable module", Default = false })
-        group:Colorpicker({ Name = "Accent", Default = Color3.new(1, 1, 1) })
-
-        local tabSettings = win:Tab({ Name = "Settings", Icon = "cog" })
-        tabSettings:Section({ Name = "GUI" }):Button({
-            Name = "Open library settings",
-            Callback = function() KrakenLib:Settings() end,
-        })
-
-        KrakenLib:Watermark({ Text = "MyScript | loaded" })
-        KrakenLib:Notification({ Title = "MyScript", Text = "Ready", Icon = "success" })
-    end)
+KrakenLib.Hotkeys:Bind("menu", Enum.KeyCode.RightShift, "Toggle", function()
+    window:Toggle()
 end)
 ```
 
----
+### Среда с локальным загрузчиком
 
-## 🤝 Contributing
+Только если среда действительно предоставляет `readfile` и `loadstring`:
 
-Issues and pull requests are welcome. If you're proposing a new element or module, please
-keep the library's two hard rules in mind:
+```lua
+local KrakenLib = assert(loadstring(readfile("KrakenUI.lua")))()
+```
 
-1. **Pure UI, no game logic.** KrakenUI never ships hooks, ESP, aim logic, or anti-cheat
-   bypasses — it's a rendering/interaction layer only.
-2. **Single file, zero dependencies.** Everything must live inside `KrakenUI.luau` with no
-   `require` calls and no external asset dependencies beyond `rbxassetid`.
+Стандартный Roblox LocalScript этих функций не предоставляет. Для опубликованных проектов используйте ModuleScript. Загруженный модуль **не создаёт окно автоматически**: вызовите `:Window()`.
 
----
+## Конвенции
 
-## 📄 License
+```lua
+KrakenLib:Window(options)           -- методы объекта: двоеточие
+KrakenLib.Theming:Use("Obsidian")   -- модуль через точку, метод через двоеточие
+KrakenLib.Flags.volume             -- чтение данных через точку
+KrakenLib.Window(KrakenLib, options) -- эквивалент явного вызова через точку
+```
 
-This project is licensed under the **MIT License**. If a `LICENSE` file isn't already in the
-repository root, add one with the standard MIT text before distributing.
+`Flag` — уникальная строка. Повторное использование существующего флага вызывает понятную ошибку. Обновляйте значения через `element:Set(...)` или `KrakenLib:SetFlag(...)`, а не прямой записью в `Flags`.
+
+Аргументы `opts` / `o` — таблицы опций. Поля с `_` являются внутренними и не входят в стабильный API. Все обычные callback вызываются защищённо; их ошибки выводятся через `warn`.
+
+## Полный публичный API
+
+### KrakenLib
+
+| Вызов | Результат / назначение |
+| :--- | :--- |
+| `:Window(opts)` | Window; `Title`, `SubTitle`, `Name`, `Size`, `Position`, `MinSize`, `MaxSize` |
+| `:GetWindow(name)` | Window или nil |
+| `:GetWindows()` | Копия массива окон |
+| `:FocusWindow(name)` | Показывает и поднимает окно; boolean |
+| `:CloseAll()` | Скрывает окна и их кнопки восстановления |
+| `:SetVisible(boolean)` | Видимость всего ScreenGui, включая оверлеи |
+| `:IsVisible()` | boolean; false до создания ScreenGui |
+| `:GetElement(flag)` | Объект компонента или nil |
+| `:GetFlag(flag)` | Значение или nil |
+| `:SetFlag(flag, value, fireCallback?)` | `ok, error`; использует реальный setter компонента |
+| `:OnFlagChanged(flag, callback)` | Возвращает функцию отписки; события изменений от интерактивных callback |
+| `:Search(query)` | Отсортированный массив флагов; поиск по флагу и имени |
+| `:ScrollToFlag(flag)` | Показывает окно, раскрывает секцию, активирует вкладку; boolean |
+| `:CommandPalette(opts?)` | Поисковое окно; `Title`; до 30 результатов, поиск при подтверждении ввода |
+| `:Notification(opts)` | Временное уведомление; `Title`, `Text`, `Icon`, `Duration` |
+| `:Announcement(opts)` | Handle с `:Dismiss()`; `Title`, `Text`, `Icon`, `Duration`, `Dismissible`, `OnDismiss` |
+| `:Modal(opts)` | Handle с `:Close()`; `Title`, `Text`, `AcceptText`, `CancelText`, `OnAccept`, `OnCancel` |
+| `:ContextMenu()` | Menu с `:Attach(guiObject, items)` и `:Close()` |
+| `:Loader(opts)` | Loader с `:Run(onDone)` |
+| `:KeySystem(opts)` | KeySystem с `:Prompt(onSuccess)`, `:LoadSavedKey()`, `:SaveKey(key)` |
+| `:Watermark(opts)` | Handle с `:Update(text)`, `:Destroy()` |
+| `:KeybindList(opts)` | Handle с `:Refresh(entries)`, `:Destroy()`; `Title` |
+| `:Settings(opts?)` | Окно настроек; `OnExport`, `OnImport` |
+| `:KeybindEditor()` | Окно редактора; созданные действия публикуют `hotkey:<name>` |
+| `:SetReducedMotion(boolean)` / `:GetReducedMotion()` | Мгновенные переходы вместо tween-анимаций |
+| `:GetVersion()` | Строка версии |
+| `:GetCapabilities()` | `{FileSystem, Clipboard, Sound, Client}` |
+| `:Unload()` | Отключает отслеживаемые соединения, удаляет GUI, очищает состояние |
+
+`KrakenLib.Version` — версия; `KrakenLib.Flags` — текущие значения. `Unload()` завершает жизненный цикл экземпляра. После него нужен **новый экземпляр библиотеки**; повторный `require` того же ModuleScript возвращает кэш, поэтому для повторной инициализации используйте новую копию ModuleScript. Для обычного закрытия используйте `Hide()`.
+
+### Window
+
+| Вызов | Назначение |
+| :--- | :--- |
+| `:Tab({Name, Icon})` | Создать вкладку |
+| `:SetTitle(text)` / `:SetSubtitle(text)` | Заголовок / подпись |
+| `:Show()` / `:Hide()` / `:Toggle()` | Управление видимостью |
+| `:IsVisible()` | boolean |
+| `:SetPosition(UDim2)` / `:GetPosition()` | Позиция |
+| `:SetSize(UDim2)` / `:GetSize()` | Размер; при программной установке выбирайте допустимые размеры самостоятельно |
+| `:Center()` | Центрировать текущий размер |
+| `:GetTabs()` | Копия массива вкладок |
+| `:GetTab(name)` | Первая вкладка с таким именем или nil |
+| `:SelectTab(name)` | Активировать вкладку; boolean |
+| `:Destroy()` | Удалить окно и его зарегистрированные элементы; повторный вызов безопасен |
+
+Размер по умолчанию: 720 × 500. `MinSize` / `MaxSize` ограничивают изменение размера мышью. Для небольших экранов задавайте подходящий `Size`; автоматическая мобильная перекомпоновка не реализована.
+
+### Tab, Section, контейнеры
+
+| Объект | API |
+| :--- | :--- |
+| Tab | `:Activate()`, `:GetName()`, `:SetName(text)`, `:IsActive()`, `:ScrollTo(y)` |
+| Tab | `:Section({Name, Icon, Collapsed, OnCollapse})`, `:Accordion()` |
+| Accordion | `:Panel(sectionOptions)` → Section |
+| Section | `:SetTitle(text)`, `:SetCollapsed(boolean, animated?)`, `:IsCollapsed()` |
+| Section / Row cell / Group | `:GetBody()` → Frame; `:SetVisible(boolean)` управляет телом контейнера |
+| Section / Row cell / Group | Все 18 конструкторов компонентов ниже |
+| Section / Row cell / Group | `:Row(count)` → от 1 до 6 отдельных контейнеров |
+| Section / Row cell / Group | `:Group({Name, Default, Flag, Callback})` → контейнер с `MasterToggle` |
+
+```lua
+local left, right = section:Row(2)
+left:StatCard({ Name = "Profiles", Default = "12", Caption = "Available locally" })
+right:StatCard({ Name = "Status", Default = "Ready", Caption = "All systems online" })
+local group = section:Group({ Name = "Advanced", Default = false })
+group:Stepper({ Name = "Retries", Min = 0, Max = 5, Default = 2 })
+group.MasterToggle:Set(true)
+```
+
+### Компоненты
+
+Все объекты компонентов имеют `Name`, `Flag`, `:SetVisible(boolean)`, `:IsVisible()`, `:Destroy()`. Методы `Get` / `Set` доступны **только там, где указаны**, а не у любого декоративного компонента.
+
+| Конструктор | Опции помимо `Name`, `Flag` | Методы результата |
+| :--- | :--- | :--- |
+| `:Toggle(o)` | `Default`, `Callback`, `Hint` | `Get()`, `Set(boolean, fireCallback?)` |
+| `:Slider(o)` | `Min`, `Max`, `Default`, `Decimals`, `Suffix`, `Callback`, `Hint` | `Get()`, `Set(number, fireCallback?)` |
+| `:Dropdown(o)` | `Options`, `Default`, `Multi`, `Callback` | `Get()`, `Set(value, fireCallback?)`, `SetOptions(array)`, `Refresh(array?)` |
+| `:Keybind(o)` | `Default`, `Mode`, `Callback` | `Get()` → key, mode, active; `Set(key, mode?)` |
+| `:Colorpicker(o)` | `Default: Color3`, `Callback` | `Get()`, `Set(Color3, fireCallback?)` |
+| `:Textbox(o)` | `Default`, `Placeholder`, `Numeric`, `Callback` | `Get()`, `Set(text)` |
+| `:Button(o)` | `Callback` | `Get()` возвращает nil; нет Set |
+| `:Label(o)` | `Text` | `Get()`, `Set(text)` |
+| `:Divider()` | Нет | Только общие методы |
+| `:Paragraph(o)` | `Title`, `Text` | `Get()`, `Set(text)` для текста тела |
+| `:Radio(o)` | `Options`, `Default`, `Callback` | `Get()`, `Set(name, fireCallback?)` |
+| `:Stepper(o)` | `Min`, `Max`, `Default`, `Step`, `Decimals`, `Suffix`, `Callback` | `Get()`, `Set(number, fireCallback?)` |
+| `:ProgressBar(o)` | `Default` в диапазоне 0…1 | `Get()`, `Set(fraction)` |
+| `:Table(o)` | `Columns`, `Rows`, `Sortable`, `Height` | `Get()`, `SetRows(rows)` |
+| `:Image(o)` | `Image`, `Height`, `Caption` | `Get()`, `Set(assetId)` |
+| **`:Badge(o)`** | `Text`, `Color` | `Get()`, `Set(text)` |
+| **`:StatCard(o)`** | `Default`, `Caption` | `Get()`, `Set(text)`, `SetCaption(text)` |
+| **`:Alert(o)`** | `Title`, `Text`, `Color` | `Get()`, `Set(text)` |
+
+`Dropdown.Multi = true`: значение — массив строк. Одиночный Dropdown — строка либо nil. Неизвестные значения отбрасываются. `SetOptions()` заменяет список вариантов, `Refresh()` перерисовывает его.
+
+`fireCallback = false` подавляет callback у Toggle, Slider, Dropdown, Radio, Stepper и Colorpicker. `Textbox:Set()` не вызывает callback. `Keybind:Set(key, mode)` использует второй параметр как режим, а не callback-флаг. `Get()` у StatCard возвращает отображаемую **строку**.
+
+### Темы и доступность
+
+**Obsidian** — новая тема по умолчанию. Также: **Pearl**, Void Purple, Cyber Blue, Sunset, Mono Dark, Mono Light, Nord, Dracula.
+
+| `KrakenLib.Theming` | Контракт |
+| :--- | :--- |
+| `:List()` / `:Use(name)` / `:GetPreset()` | Список / применить / текущее имя |
+| `:Get()` | Таблица `Accent, Bg, Panel, Text, SubText`; считайте её read-only |
+| `:Register(name, colors)` | Все пять полей обязательны, тип Color3 |
+| `:SetAccent(Color3)` | Изменить акцент |
+| `:SetRadius(number)` / `:GetRadius()` | 0…20 |
+| `:SetBorderThickness(number)` / `:GetBorderThickness()` | 0…3 |
+| `:SetGlow(boolean)` / `:GetGlow()` | Свечение окон |
+| `:SetAnimSpeed(number)` / `:GetAnimSpeed()` | 0…4; множитель для анимаций, использующих настройку |
+| `:SetDensity(name)` / `:GetDensity()` | Compact, Normal, Comfortable; возвращает имя и таблицу отступов |
+| `:OnChanged(callback)` | Функция отписки |
+| `:Export()` / `:Import(json)` | JSON / boolean |
+
+```lua
+KrakenLib.Theming:Use("Obsidian")
+KrakenLib.Theming:SetAccent(Color3.fromRGB(155, 130, 255))
+KrakenLib:SetReducedMotion(true)
+KrakenLib.Theming:Register("Custom", {
+    Accent = Color3.fromRGB(70, 150, 255),
+    Bg = Color3.fromRGB(17, 18, 23),
+    Panel = Color3.fromRGB(25, 27, 34),
+    Text = Color3.fromRGB(241, 242, 247),
+    SubText = Color3.fromRGB(164, 169, 185),
+})
+```
+
+Цвета обновляются у существующих объектов по токенам. Сложные состояния и пользовательские цвета необходимо проверить в своей теме. Радиусы и толщина границ применяются там, где конструктор использует эти настройки; это не глобальный CSS. Экспорт темы содержит имя пресета и настройки, **не определение пользовательской палитры**: зарегистрируйте её до импорта.
+
+### Fonts, Icons, Sounds, Animations
+
+| Модуль | Все публичные методы |
+| :--- | :--- |
+| `Fonts` | `List()`, `Register(name, fontFamilyAssetId, weight?, style?) → boolean`, `Resolve(name) → font, isFontFace`, `Apply(textInstance, name?, size?)`, `SetDefault(name?, size?)`, `GetDefault() → name, size` |
+| `Icons` | `Get(name) → assetId?`, `Register(name, imageId)`, `List()` |
+| `Sounds` | `SetEnabled(boolean)`, `GetEnabled()`, `SetVolume(0…1)`, `GetVolume()`, `Register(name, soundId)`, `List()`, `Play(name) → boolean` |
+| `Animations` | `Register(name, fn)`, `List()`, `Play(instance, presetName, opts?)` |
+| `Tooltip` | `Attach(guiObject, text)` |
+
+`Sounds.Available` сообщает результат последней попытки API-воспроизведения, но не гарантирует загрузку или слышимость asset. Ошибка выводится один раз. Звуки выключены по умолчанию.
+
+Встроенные звуки: `click`, `hover`, `toggleOn`, `toggleOff`, `notify`. Анимации: `FadeIn`, `FadeOut`, `Pulse`, `Shake`, `SlideInLeft`, `SlideInRight`, `SlideInTop`. Точные доступные ключи иконок и шрифтов возвращает `List()`.
+
+`Fonts:Register` требует **Roblox Font Family Asset**, не изображение. Псевдонимы Verdana, Tahoma XP и Roboto в старом API являются приближениями встроенными шрифтами, а не загрузкой оригинальных гарнитур. Многие встроенные компоненты задают шрифт явно.
+
+### Events и Hotkeys
+
+```lua
+local off = KrakenLib.Events:On("saved", function(name) print(name) end)
+KrakenLib.Events:Once("ready", function() print("Only once") end)
+KrakenLib.Events:Fire("saved", "default")
+off()
+
+local callback = function(value) print(value) end
+KrakenLib.Events:On("event", callback)
+KrakenLib.Events:Off("event", callback)
+KrakenLib.Hotkeys:Bind("menu", Enum.KeyCode.RightShift, "Toggle", callback)
+local bindings = KrakenLib.Hotkeys:List()
+KrakenLib.Hotkeys:Unbind("menu")
+```
+
+Режимы глобальных Hotkeys: `Toggle` переключает состояние, `Hold` включает при нажатии и выключает при отпускании, `Always` сразу вызывает callback(true). `List()` возвращает записи `{Name, Key, Mode, Active}`. Элемент Keybind и глобальный Hotkeys — разные механизмы.
+
+### Config
+
+| Вызов | Результат |
+| :--- | :--- |
+| `Config:Export()` | JSON `{Version = 2, Flags = ...}`; Color3 и enum сериализуются с типом |
+| `Config:Import(json)` | `ok, errors`; восстанавливает зарегистрированные элементы, неизвестные флаги пропускает |
+| `Config:Save(name)` | `ok, error`; требует файловый API среды |
+| `Config:Load(name)` | `ok, errors`; требует файловый API среды |
+| `Config:List()` | Отсортированный массив имён профилей |
+| `Config:Delete(name)` | `ok, error` |
+
+Имя профиля: 1…64 ASCII-буквы, цифры, `_`, `-`. Путь по умолчанию: `KrakenUI/configs/<name>.json`. В Studio файловые операции недоступны; передайте JSON в собственный серверный слой сохранения. В библиотеке нет облачной синхронизации.
+
+Импорт применяет значения последовательно и сообщает об ошибках; это **не атомарная транзакция**. Создайте элементы до импорта. Компоненты без Set, например Table, не являются сохраняемыми настройками. Для них передавайте данные через соответствующий API.
+
+### Оверлеи и служебные интерфейсы
+
+```lua
+KrakenLib:Notification({ Title = "Saved", Text = "Profile updated", Icon = "success", Duration = 3 })
+local banner = KrakenLib:Announcement({ Title = "Update", Text = "New workspace available", Dismissible = true })
+banner:Dismiss()
+
+local dialog = KrakenLib:Modal({
+    Title = "Reset appearance?", Text = "Your custom colors will be replaced.",
+    AcceptText = "Reset", CancelText = "Keep",
+    OnAccept = function() KrakenLib.Theming:Use("Obsidian") end,
+})
+-- dialog:Close()
+
+local loader = KrakenLib:Loader({ Title = "Workspace", Subtitle = "Initializing", Steps = {
+    { Name = "Prepare", Weight = 1, Fn = function() task.wait(0.1) end },
+    { Name = "Ready", Weight = 1 },
+} })
+loader:Run(function() print("Ready") end)
+
+local watermark = KrakenLib:Watermark({ Text = "Kraken", UpdateInterval = 1, UpdateFn = function() return os.date("%H:%M:%S") end })
+watermark:Update("Custom status")
+local binds = KrakenLib:KeybindList({ Title = "Shortcuts" })
+binds:Refresh({ { Name = "Menu", Key = "RightShift" } })
+
+local menu = KrakenLib:ContextMenu()
+menu:Attach(section:GetBody(), { { Name = "Reset theme", Icon = "refresh", Callback = function()
+    KrakenLib.Theming:Use("Obsidian")
+end } })
+KrakenLib.Tooltip:Attach(section:GetBody(), "Workspace controls")
+```
+
+KeySystem предоставляет экран ввода, локальную проверку формата и callback `Validate(key) → boolean, message?`. Параметры включают `Title`, `BuyUrl`, `DiscordUrl`, `RateLimit = {Attempts, Window}`, `Validate`. Он **не является серверной авторизацией**: секреты и доверенные проверки должны оставаться на сервере. Локальный rate limit не защищает backend. URL-кнопки зависят от возможностей среды.
+
+## Что исправлено
+
+- Удалено недопустимое `GroupTransparency` у ScrollingFrame.
+- Убрана анимация, которая делала фон секции прозрачным навсегда и конфликтовала с UIListLayout.
+- Добавлен пересчёт высоты секции при изменении содержимого.
+- Перетаскивание учитывает масштабную часть позиции и реальные границы контейнера, без фиктивной камеры 1920 × 1080.
+- `table.clone` имеет локальный fallback, глобальная стандартная библиотека не изменяется.
+- Добавлен `Dropdown:Set`, необходимый для восстановления конфигураций.
+- Цвета и EnumItem корректно преобразуются для JSON-конфигураций.
+- Улучшены сообщения об ошибках шрифтов и диагностика звука.
+- Созданные редактором бинды подключаются к Hotkeys, удаление отвязывает действие.
+- Поиск учитывает названия; переход открывает окно и секцию.
+- При выгрузке дополнительно сбрасываются уведомления, drag-состояние и реестр биндов.
+- Добавлены новые API окон, вкладок, элементов, тем, событий, конфигов и три визуальных компонента.
+
+### Уточнения к приложенному аудиту
+
+В исходнике GitHub очистка `_elements` и поле `Section._body` **уже существовали**. Добавлен публичный `GetBody()`, редактор больше не зависит от приватного поля. `JumpRequest` в библиотеке не найден; замена его произвольным Touch-событием не выполнялась, поскольку касание экрана не равно команде прыжка.
+
+## Проверка и ограничения
+
+Синтаксис проверяется компилятором Luau. `SmokeTest.client.lua` предназначен для реального клиентского запуска в Studio: создание компонентов, переключение вкладок, конфиги, темы и уничтожение окна. Наличие тестового файла не означает, что Roblox Studio запускался в среде разработки этого обновления.
+
+Перед выпуском проверьте мышь и touch, многократное открытие/закрытие, темы, размеры экрана и разрешения на используемые assets. Не все исходные компоненты поддерживают полноценную клавиатурную навигацию и мобильную компоновку. Долгоживущие глобальные соединения окончательно отключаются через `Unload()`.
 
 ---
 
 <div align="center">
 
-Made for the Roblox executor community · [github.com/GGgodd211/KrakenLib](https://github.com/GGgodd211/KrakenLib)
+**KrakenUI** · A quieter interface. A stronger foundation.
+
+[Исходный репозиторий](https://github.com/GGgodd211/KrakenLib) · [Lua](KrakenUI.lua) · [Luau](KrakenUI.luau)
 
 </div>
